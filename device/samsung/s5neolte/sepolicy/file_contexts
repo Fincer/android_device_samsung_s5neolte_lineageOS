@@ -1,0 +1,1 @@
+/(vendor|system/vendor)/bin/hw/vendor\.hardware\.nfc@\d+\.\d+-service\.samsung   u:object_r:nfc_exec:s0
