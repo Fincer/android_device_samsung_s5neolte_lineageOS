@@ -1,0 +1,16 @@
+--- a/heimdall/source/BridgeManager.cpp	2021-07-01 20:11:25.904083328 +0300
++++ b/heimdall/source/BridgeManager.cpp	2021-07-01 20:16:20.223490117 +0300
+@@ -1107,6 +1107,13 @@ bool BridgeManager::SendFile(FILE *file,
+ 			success = ReceivePacket(sendFilePartResponse);
+ 			int receivedPartIndex = sendFilePartResponse->GetPartIndex();
+ 
++            if (filePartIndex == 0)
++            {
++              // Hack
++              success = true;
++              receivedPartIndex = filePartIndex;
++            }
++
+ 			delete sendFilePartResponse;
+ 
+ 			if (!success)
