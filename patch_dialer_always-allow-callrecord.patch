@@ -1,0 +1,99 @@
+From: Pekka Helenius <pekka.helenius@fjordtek.com>
+Date: Fri, 09 Jul 2021 00:08:12 +0300
+Subject: [PATCH] Dialer: Always allow call recording option, regardless of country or state
+
+--- a/packages/apps/Dialer/java/com/android/incallui/call/CallRecorder.java	2021-06-29 16:32:32.000000000 +0300
++++ b/packages/apps/Dialer/java/com/android/incallui/call/CallRecorder.java	2021-07-09 00:08:11.469533280 +0300
+@@ -20,7 +20,6 @@
+ import android.content.Context;
+ import android.content.Intent;
+ import android.content.ServiceConnection;
+-import android.content.res.XmlResourceParser;
+ import android.os.Handler;
+ import android.os.IBinder;
+ import android.os.Looper;
+@@ -35,12 +34,8 @@
+ import com.android.dialer.callrecord.CallRecording;
+ import com.android.dialer.callrecord.ICallRecorderService;
+ import com.android.dialer.callrecord.impl.CallRecorderService;
+-import com.android.dialer.location.GeoUtil;
+ import com.android.incallui.call.state.DialerCallState;
+ 
+-import org.xmlpull.v1.XmlPullParser;
+-import org.xmlpull.v1.XmlPullParserException;
+-
+ import java.io.IOException;
+ import java.util.Date;
+ import java.util.HashMap;
+@@ -94,20 +89,6 @@
+     return CallRecorderService.isEnabled(context);
+   }
+ 
+-  public boolean canRecordInCurrentCountry() {
+-      if (!isEnabled()) {
+-          return false;
+-      }
+-      if (RECORD_ALLOWED_STATE_BY_COUNTRY.isEmpty()) {
+-          loadAllowedStates();
+-      }
+-
+-      String currentCountryIso = GeoUtil.getCurrentCountryIso(context);
+-      Boolean allowedState = RECORD_ALLOWED_STATE_BY_COUNTRY.get(currentCountryIso);
+-
+-      return allowedState != null && allowedState;
+-  }
+-
+   private CallRecorder() {
+     CallList.getInstance().addListener(this);
+   }
+@@ -299,38 +280,4 @@
+       handler.postDelayed(this, UPDATE_INTERVAL);
+     }
+   };
+-
+-  private void loadAllowedStates() {
+-    XmlResourceParser parser = context.getResources().getXml(R.xml.call_record_states);
+-    try {
+-        // Consume all START_DOCUMENT which can appear more than once.
+-        while (parser.next() == XmlPullParser.START_DOCUMENT) {}
+-
+-        parser.require(XmlPullParser.START_TAG, null, "call-record-allowed-flags");
+-
+-        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+-            if (parser.getEventType() != XmlPullParser.START_TAG) {
+-                continue;
+-            }
+-            parser.require(XmlPullParser.START_TAG, null, "country");
+-
+-            String iso = parser.getAttributeValue(null, "iso");
+-            String allowed = parser.getAttributeValue(null, "allowed");
+-            if (iso != null && ("true".equals(allowed) || "false".equals(allowed))) {
+-                for (String splittedIso : iso.split(",")) {
+-                    RECORD_ALLOWED_STATE_BY_COUNTRY.put(
+-                            splittedIso.toUpperCase(Locale.US), Boolean.valueOf(allowed));
+-                }
+-            } else {
+-                throw new XmlPullParserException("Unexpected country specification", parser, null);
+-            }
+-        }
+-        Log.d(TAG, "Loaded " + RECORD_ALLOWED_STATE_BY_COUNTRY.size() + " country records");
+-    } catch (XmlPullParserException | IOException e) {
+-        Log.e(TAG, "Could not parse allowed country list", e);
+-        RECORD_ALLOWED_STATE_BY_COUNTRY.clear();
+-    } finally {
+-        parser.close();
+-    }
+-  }
+ }
+--- a/packages/apps/Dialer/java/com/android/incallui/CallButtonPresenter.java	2021-06-29 16:32:31.000000000 +0300
++++ b/packages/apps/Dialer/java/com/android/incallui/CallButtonPresenter.java	2021-07-09 00:03:12.542942441 +0300
+@@ -562,8 +562,7 @@
+             && call.getState() != DialerCallState.CONNECTING;
+ 
+     final CallRecorder recorder = CallRecorder.getInstance();
+-    final boolean showCallRecordOption = recorder.canRecordInCurrentCountry()
+-        && !isVideo && call.getState() == DialerCallState.ACTIVE;
++    final boolean showCallRecordOption = !isVideo && call.getState() == DialerCallState.ACTIVE;
+ 
+     otherAccount = TelecomUtil.getOtherAccount(getContext(), call.getAccountHandle());
+     boolean showSwapSim =
