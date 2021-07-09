@@ -1,0 +1,16 @@
+# For the updaters
+allow system_app cache_recovery_file:dir {add_name rw_file_perms};
+allow system_app cache_recovery_file:file {create rw_file_perms};
+
+allow system_app apk_data_file:dir write;
+
+# Allow Settings to read ro.vendor.build.security_patch
+get_prop(system_app, vendor_security_patch_level_prop)
+
+# Allow access to the HALs
+hal_client_domain(system_app, hal_lineage_fastcharge)
+hal_client_domain(system_app, hal_lineage_livedisplay)
+hal_client_domain(system_app, hal_lineage_touch)
+
+# Allow SetupWizard to set recovery update prop
+set_prop(system_app, recovery_update_prop)
