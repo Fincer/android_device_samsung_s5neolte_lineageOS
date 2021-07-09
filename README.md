@@ -73,3 +73,9 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
   - This is useful for partial patches
 
   - For instance, building only `Dialer` APK, run `mmm packages/apps/Dialer` in lineage source root dir
+
+### Init.d support
+
+No, do not use `/system/etc/init.d/` or look for such folders. Simply put your boot time scripts into `/etc/adb/service.d/` folder, set their owner to `root:root` and permission bits to `0700`. You may give less restrictive permissions at your own risk. Default owner of these scripts seems to be `root:shell`. You may use TWRP to set owner & permission information.
+
+Optionally, folder `/etc/adb/post-fs-data.d/` may be used, as well.
