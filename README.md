@@ -64,6 +64,10 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
 
     - Heimdall flash command for Samsung S5 Neo: `heimdall flash --BOOT boot.img --SYSTEM system.img --USERDATA userdata.img --CM cm.bin --PARAM param.bin --BOOTLOADER sboot.bin --RADIO modem.bin --CACHE cache.img --HIDDEN hidden.img`
 
+      - **WARNING**: Use absolutely correct, Samsung provided files in `heimdall` command. Otherwise the flash process may fail and you end up with a bricked phone.
+
+      - Flashing `USERDATA` is not necessary
+
 ## Additional tips
 
 - You may build parts of LineageOS using `mm` and `mmm` commands after sourcing `build/envsetup.sh`
