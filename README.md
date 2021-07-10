@@ -24,8 +24,6 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
 
   - Install only contents of LineageOS zip file `lineage-18.1-YYYYMMDD-UNOFFICIAL-s5neolte.zip` using TWRP
 
-  - I use `ccache` with setting `10G`
-
   - You may already have `repo` command pre-installed on your system
 
   - Use command `repo init -u https://github.com/LineageOS/android.git -b lineage-18.1`
