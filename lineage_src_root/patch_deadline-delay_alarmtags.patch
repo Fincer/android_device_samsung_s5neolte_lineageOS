@@ -1,0 +1,24 @@
+From: Pekka Helenius <pekka.helenius@fjordtek.com>
+Date: Fri, 11 Jul 2021 15:40:12 +0300
+Subject: [PATCH] Android Job Controller: Print more information about delayed and deadline jobs
+
+--- a/frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/TimeController.java	2021-06-29 16:28:42.000000000 +0300
++++ b/frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/TimeController.java	2021-07-11 15:35:49.000000000 +0300
+@@ -384,7 +384,7 @@
+         final int alarmType =
+                 mTcConstants.USE_NON_WAKEUP_ALARM_FOR_DELAY
+                         ? AlarmManager.ELAPSED_REALTIME : AlarmManager.ELAPSED_REALTIME_WAKEUP;
+-        updateAlarmWithListenerLocked(DELAY_TAG, alarmType,
++        updateAlarmWithListenerLocked(DELAY_TAG + " " + ws.toString(), alarmType,
+                 mNextDelayExpiredListener, mNextDelayExpiredElapsedMillis, ws);
+     }
+ 
+@@ -399,7 +399,7 @@
+             return;
+         }
+         mNextJobExpiredElapsedMillis = alarmTimeElapsedMillis;
+-        updateAlarmWithListenerLocked(DEADLINE_TAG, AlarmManager.ELAPSED_REALTIME_WAKEUP,
++        updateAlarmWithListenerLocked(DEADLINE_TAG + " " + ws.toString(), AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                 mDeadlineExpiredListener, mNextJobExpiredElapsedMillis, ws);
+     }
+ 
