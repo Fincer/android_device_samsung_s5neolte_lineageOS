@@ -76,6 +76,8 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
 
   - For instance, building only `Dialer` APK, run `mmm packages/apps/Dialer` in lineage source root dir
 
+- Before starting Lineage OS, you may need to wipe cache & Dalvik cache in TWRP (`Wipe -> Advanced Wipe -> [Dalvik / ART Cache, Cache]`)
+
 ### Init.d support
 
 No, do not use `/system/etc/init.d/` or look for such folders. Simply put your boot time scripts into `/etc/adb/service.d/` folder, set their owner to `root:root` and permission bits to `0700`. You may give less restrictive permissions at your own risk. Default owner of these scripts seems to be `root:shell`. You may use TWRP to set owner & permission information.
