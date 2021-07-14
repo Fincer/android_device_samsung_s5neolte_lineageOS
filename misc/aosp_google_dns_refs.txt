@@ -1,0 +1,14 @@
+Android OS Google DNS4 & DNS6 server (8.8.8.8, 8.8.4.4, 2001:4860:4860::8888, 2001:4860:4860::8844) references, AOSP source files (test files excluded):
+
+bionic/libc/dns/net/getaddrinfo.c
+development/scripts/reverse_tether.sh
+device/generic/goldfish/radio/ril/reference-ril.c
+external/mesa3d/.gitlab-ci/bare-metal/init.sh
+external/perfetto/infra/ci/worker/gce-startup-script.sh
+external/toybox/scripts/mkroot.sh
+external/webrtc/webrtc/base/network.cc
+frameworks/base/core/java/android/net/util/DnsUtils.java
+frameworks/base/core/res/res/values/config.xml
+frameworks/base/packages/Tethering/src/com/android/networkstack/tethering/TetheringConfiguration.java
+frameworks/base/services/core/java/com/android/server/connectivity/NetworkDiagnostics.java
+packages/modules/DnsResolver/getaddrinfo.cpp
