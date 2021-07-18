@@ -116,3 +116,5 @@ gdata.youtube.com
 img.youtube.com
 m.youtube.com
 www.youtube.com
+
+google-ipv6test.appspot.com
