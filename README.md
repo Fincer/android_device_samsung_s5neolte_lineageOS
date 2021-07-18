@@ -76,6 +76,8 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
 
   - For instance, building only `Dialer` APK, run `mmm packages/apps/Dialer` in lineage source root dir
 
+- If in any case, you get error message `cmd: unknown variable '$(PATH_OVERRIDE_SOONG)'`, run `breakfast <lunch-command-option>` command at Lineage OS source directory root again before issuing any other commands. Running `breakfast` command can take 10-15 minutes without any visible progress displayed
+
 - Before starting Lineage OS, you may need to wipe cache & Dalvik cache in TWRP (`Wipe -> Advanced Wipe -> [Dalvik / ART Cache, Cache]`)
 
 ### Init.d support
