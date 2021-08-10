@@ -8,7 +8,15 @@ This repository has the following patches such as:
 
 - Enable call recording
 
+  - Bypasses all country restrictions
+
+- Replace Google DNS server references
+
 Original source code repositories:
+
+- [GitHub - LineageOS/android_device_samsung_s5neolte](https://github.com/LineageOS/android_device_samsung_s5neolte)
+
+- [GitHub - LineageOS/android_device_samsung_universal7580-common](https://github.com/LineageOS/android_device_samsung_universal7580-common)
 
 - [GitHub - LineageOS/android_hardware_samsung_nfc](https://github.com/LineageOS/android_hardware_samsung_nfc)
 
@@ -82,6 +90,48 @@ Follow [Lineage OS for Samsung S5 Neo guide](https://wiki.lineageos.org/devices/
 
 ### Init.d support
 
-No, do not use `/system/etc/init.d/` or look for such folders. Simply put your boot time scripts into `/etc/adb/service.d/` folder, set their owner to `root:root` and permission bits to `0700`. You may give less restrictive permissions at your own risk. Default owner of these scripts seems to be `root:shell`. You may use TWRP to set owner & permission information.
+No, do not use `/system/etc/init.d/` or look for such folders. Simply put your boot time scripts into `/data/adb/service.d/` folder, set their owner to `root:root` and permission bits to `0700`. You may give less restrictive permissions at your own risk. Default owner of these scripts seems to be `root:shell`. You may use TWRP to set owner & permission information.
 
-Optionally, folder `/etc/adb/post-fs-data.d/` may be used, as well.
+Optionally, folder `/data/adb/post-fs-data.d/` may be used, as well.
+
+#### Additional startup scripts
+
+Disable Captive Portal on startup.
+
+See: [disable_captiveportal.sh](init.d/disable_captiveportal.sh)
+
+### DNS modifications
+
+Replaces Google DNS servers with `127.0.0.1` and `::1` addresses.
+
+See: [patch_localhost-dns_ntp_gps.patch](lineage_src_root/patch_localhost-dns_ntp_gps.patch), and the article [Fjortek.com - Enforced, encrypted, self-hosted DNS solution for Android devices](https://fjordtek.com/categories/news/2021/enforced-encrypted-self-hosted-dns-solution-for-android-devices/).
+
+### Bromite webview
+
+Replaces built-in, prebuild Google Chromium webview with [Bromite webview](https://github.com/bromite/bromite).
+
+See: [chromium-webview/Android.mk](lineage_src_root/external/chromium-webview/Android.mk)
+
+### Default input method: Replace LatinIME
+
+**1)** Download privacy friendly [simple-keyboard](https://github.com/rkkr/simple-keyboard/) and put source files into a new folder `packages/inputmethods/simple-keyboard/`
+
+**2)** Get [Android.mk](lineage_src_root/packages/inputmethods/simple-keyboard/Android.mk) and [CleanSpec.mk](lineage_src_root/packages/inputmethods/simple-keyboard/CleanSpec.mk) for simple-keyboard. Put the files into the root folder of downloaded `simple-keyboard` source files.
+
+**3)** Remove default input method `LatinIME` from AOSP 11 compilation process by commenting out lines
+
+```
+PRODUCT_PACKAGES += \
+    LatinIME
+```
+
+in `build/make/target/product/handheld_product.mk`
+
+**4)** You need to add lines
+
+```
+PRODUCT_PACKAGES += \
+    SimpleKeyboard
+```
+
+into some `.mk` file of your choice.
