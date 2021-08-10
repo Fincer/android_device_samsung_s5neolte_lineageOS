@@ -1,0 +1,230 @@
+--- a/frameworks/base/services/core/java/com/android/server/connectivity/NetworkDiagnostics.java	2021-06-29 16:34:04.000000000 +0300
++++ b/frameworks/base/services/core/java/com/android/server/connectivity/NetworkDiagnostics.java	2021-07-15 22:01:56.757540577 +0300
+@@ -97,9 +97,9 @@ import javax.net.ssl.SSLSocketFactory;
+ public class NetworkDiagnostics {
+     private static final String TAG = "NetworkDiagnostics";
+ 
+-    private static final InetAddress TEST_DNS4 = NetworkUtils.numericToInetAddress("8.8.8.8");
++    private static final InetAddress TEST_DNS4 = NetworkUtils.numericToInetAddress("127.0.0.1");
+     private static final InetAddress TEST_DNS6 = NetworkUtils.numericToInetAddress(
+-            "2001:4860:4860::8888");
++            "::1");
+ 
+     // For brevity elsewhere.
+     private static final long now() {
+--- a/frameworks/base/packages/Tethering/src/com/android/networkstack/tethering/TetheringConfiguration.java	2021-07-12 00:09:38.000000000 +0300
++++ b/frameworks/base/packages/Tethering/src/com/android/networkstack/tethering/TetheringConfiguration.java	2021-07-15 16:41:00.571476404 +0300
+@@ -32,6 +32,14 @@ import android.text.TextUtils;
+ 
+ import com.android.internal.annotations.VisibleForTesting;
+ 
++import java.io.File;
++import java.io.FileReader;
++import java.io.FileNotFoundException;
++import java.io.IOException;
++import java.io.BufferedReader;
++import java.util.regex.Pattern;
++import java.util.regex.Matcher;
++
+ import java.io.PrintWriter;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+@@ -68,8 +76,54 @@ public class TetheringConfiguration {
+         "192.168.48.2", "192.168.48.254", "192.168.49.2", "192.168.49.254",
+     };
+ 
+-    private static final String[] DEFAULT_IPV4_DNS = {"8.8.4.4", "8.8.8.8"};
+-
++    // Get default DNS IPv4 server values from resolv.conf file. If the
++    // file does not exist, fall back to value of FALLBACK_IPV4_DNS
++    private static final File dnsFile = new File("/system/etc/resolv.conf");
++    private static String FALLBACK_IPV4_DNS = "127.0.0.1";
++
++    private static ArrayList<String> getSystemDNSResolvers(File file) {
++
++      int i;
++      String addr;
++      ArrayList<String> addresses = new ArrayList<String>();
++      Matcher matcher;
++      final Pattern pattern = Pattern.compile("^\\s*[^#]*nameserver\\s+[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}");
++
++      try {
++        FileReader fileReader = new FileReader(file);
++        BufferedReader bufferedReader = new BufferedReader(fileReader);
++        String line = bufferedReader.readLine();
++
++        while (line != null) {
++
++          matcher =  pattern.matcher(line);
++
++          if (matcher.find() ) {
++            // Do not match address space 127.0.0.0/8
++            if (!line.split(" ")[1].matches("127.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}")) {
++              addresses.add(line.split(" ")[1]);
++            }
++          }
++
++          line = bufferedReader.readLine();
++        }
++      } catch (IOException e) {
++        addresses.add(FALLBACK_IPV4_DNS);
++      }
++    
++      return addresses;
++    }
++
++    private static final String[] getDefaultIPV4Dns(ArrayList<String> dnsPool) {
++
++      final String[] DEFAULT_IPV4_DNS = new String[dnsPool.size()];
++
++      for (int i = 0; i < dnsPool.size(); i++) {
++        DEFAULT_IPV4_DNS[i] = dnsPool.get(i);
++      }
++      return DEFAULT_IPV4_DNS;
++    }
++    
+     /**
+      * Override enabling BPF offload configuration for tethering.
+      */
+@@ -137,7 +191,7 @@ public class TetheringConfiguration {
+         preferredUpstreamIfaceTypes = getUpstreamIfaceTypes(res, isDunRequired);
+ 
+         legacyDhcpRanges = getLegacyDhcpRanges(res);
+-        defaultIPv4DNS = copy(DEFAULT_IPV4_DNS);
++        defaultIPv4DNS = copy(getDefaultIPV4Dns(getSystemDNSResolvers(dnsFile)));
+         mEnableBpfOffload = getEnableBpfOffload(res);
+         enableLegacyDhcpServer = getEnableLegacyDhcpServer(res);
+
+--- a/frameworks/base/core/java/android/net/util/DnsUtils.java	2021-06-29 16:28:44.000000000 +0300
++++ b/frameworks/base/core/java/android/net/util/DnsUtils.java	2021-07-16 06:25:13.594058125 +0300
+@@ -343,8 +343,9 @@ public class DnsUtils {
+      * This function matches the behaviour of have_ipv4 in the native resolver.
+      */
+     public static boolean haveIpv4(@Nullable Network network) {
++
+         final SocketAddress addrIpv4 =
+-                new InetSocketAddress(InetAddresses.parseNumericAddress("8.8.8.8"), 0);
++                new InetSocketAddress(InetAddresses.parseNumericAddress("127.0.0.1"), 0);
+         return checkConnectivity(network, AF_INET, addrIpv4);
+     }
+ 
+@@ -353,8 +354,9 @@ public class DnsUtils {
+      * This function matches the behaviour of have_ipv6 in the native resolver.
+      */
+     public static boolean haveIpv6(@Nullable Network network) {
++
+         final SocketAddress addrIpv6 =
+-                new InetSocketAddress(InetAddresses.parseNumericAddress("2000::"), 0);
++                new InetSocketAddress(InetAddresses.parseNumericAddress("::1"), 0);
+         return checkConnectivity(network, AF_INET6, addrIpv6);
+     }
+ 
+--- a/external/perfetto/infra/ci/worker/gce-startup-script.sh	2021-06-29 16:25:20.000000000 +0300
++++ b/external/perfetto/infra/ci/worker/gce-startup-script.sh	2021-07-15 21:54:27.571369394 +0300
+@@ -41,7 +41,7 @@ docker network create sandbox -o com.doc
+ sudo iptables -I DOCKER-USER -i sandbox -d 169.254.0.0/16 -j REJECT
+ 
+ # These args will be appended to the docker run invocation for the sandbox.
+-export SANDBOX_NETWORK_ARGS="--network sandbox --dns 8.8.8.8"
++export SANDBOX_NETWORK_ARGS="--network sandbox --dns 127.0.0.1"
+ 
+ # The worker_main_loop.py script creates one docker sandbox container for
+ # each job invocation. It needs to talk back to the host docker to do so.
+--- a/external/toybox/scripts/mkroot.sh	2021-06-29 16:27:16.000000000 +0300
++++ b/external/toybox/scripts/mkroot.sh	2021-07-13 22:09:21.000000000 +0300
+@@ -96,7 +96,8 @@ nobody:x:65534:65534:nobody:/proc/self:/
+ EOF
+ echo -e 'root:x:0:\nguest:x:500:\nnobody:x:65534:' > "$ROOT"/etc/group &&
+ # Google's public nameserver.
+-echo "nameserver 8.8.8.8" > "$ROOT"/etc/resolv.conf || exit 1
++#echo "nameserver 8.8.8.8" > "$ROOT"/etc/resolv.conf || exit 1
++echo "nameserver 127.0.0.1" > "$ROOT"/etc/resolv.conf || exit 1
+ 
+ # Build toybox
+ make clean
+--- a/device/generic/goldfish/radio/ril/reference-ril.c	2021-06-29 16:30:12.000000000 +0300
++++ b/device/generic/goldfish/radio/ril/reference-ril.c	2021-07-15 21:52:53.721481760 +0300
+@@ -854,10 +854,10 @@ static void requestOrSendDataCallList(RI
+             responses[i].mtu = DEFAULT_MTU;
+         }
+         else {
+-            /* I don't know where we are, so use the public Google DNS
+-                * servers by default and no gateway.
++            /*
++                * No dns servers and no gateway by default.
+                 */
+-            responses[i].dnses = "8.8.8.8 8.8.4.4";
++            responses[i].dnses = "127.0.0.1";
+             responses[i].gateways = "";
+         }
+     }
+--- a/development/scripts/reverse_tether.sh	2021-06-29 16:29:31.000000000 +0300
++++ b/development/scripts/reverse_tether.sh	2021-07-15 21:51:24.584925993 +0300
+@@ -21,8 +21,10 @@
+ : ${PHONE_HW:=""}  # hardware (Ethernet) address for the interface (bridge only)
+ 
+ # for NAT configuration
+-: ${DNS1:=8.8.8.8}
+-: ${DNS2:=8.8.4.4}
++#: ${DNS1:=8.8.8.8}
++#: ${DNS2:=8.8.4.4}
++: ${DNS1:=127.0.0.1}
++: ${DNS2:=127.0.0.1}
+ 
+ # export ADB=/path/to/sdk/adb for custom adb
+ ADB="${ADB:-adb} ${SERIAL:+-s $SERIAL}"
+--- a/bionic/libc/dns/net/getaddrinfo.c	2021-06-29 16:19:22.000000000 +0300
++++ b/bionic/libc/dns/net/getaddrinfo.c	2021-07-15 22:04:06.177406241 +0300
+@@ -387,7 +387,7 @@ static int
+ _have_ipv4(unsigned mark, uid_t uid) {
+ 	static const struct sockaddr_in sin_test = {
+ 		.sin_family = AF_INET,
+-		.sin_addr.s_addr = __constant_htonl(0x08080808L)  // 8.8.8.8
++        .sin_addr.s_addr = __constant_htonl(0x7F000001L) // 127.0.0.1;  (0x08080808L)  // 8.8.8.8
+ 	};
+ 	sockaddr_union addr = { .in = sin_test };
+ 	return _find_src_addr(&addr.generic, NULL, mark, uid) == 1;
+ 
+--- a/frameworks/base/core/res/res/values/config.xml	2021-07-19 21:00:36.771278838 +0300
++++ b/frameworks/base/core/res/res/values/config.xml	2021-07-19 21:01:24.554522022 +0300
+@@ -2038,7 +2038,7 @@
+     <bool name="config_actionMenuItemAllCaps">true</bool>
+ 
+     <!-- Remote server that can provide NTP responses. -->
+-    <string translatable="false" name="config_ntpServer">time.android.com</string>
++    <string translatable="false" name="config_ntpServer">pool.ntp.org</string>
+     <!-- Normal polling frequency in milliseconds -->
+     <integer name="config_ntpPollingInterval">86400000</integer>
+     <!-- Try-again polling interval in milliseconds, in case the network request failed -->
+--- /dev/null	2021-08-08 22:17:37.416979404 +0300
++++ b/device/samsung/s5neolte/configs/net/resolv.conf	2021-07-14 23:39:55.000000000 +0300
+@@ -0,0 +1,4 @@
++nameserver 208.67.222.222
++nameserver 208.67.220.220
++nameserver 208.67.222.123
++nameserver 208.67.220.123
+--- a/device/samsung/s5neolte/device.mk	2021-06-29 17:11:36.000000000 +0300
++++ b/device/samsung/s5neolte/device.mk	2021-07-15 13:46:07.000000000 +0300
+@@ -135,6 +135,10 @@ PRODUCT_COPY_FILES += \
+     $(LOCAL_PATH)/configs/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf \
+     $(LOCAL_PATH)/configs/wifi/filter_ie:system/etc/wifi/filter_ie
+ 
++# Resolv.conf
++PRODUCT_COPY_FILES += \
++    $(LOCAL_PATH)/configs/net/resolv.conf:system/etc/resolv.conf
++
+ # Properties
+ -include $(LOCAL_PATH)/system_prop.mk
+ 
+--- a/device/samsung/universal7580-common/configs/gps/gps.conf	2021-08-10 22:40:56.416633337 +0300
++++ b/device/samsung/universal7580-common/configs/gps/gps.conf	2021-07-12 01:17:46.038955140 +0300
+@@ -1,6 +1,6 @@
+ NTP_SERVER=pool.ntp.org
+ XTRA_SERVER_1=https://glltos1.glpals.com/4day/v3/latest/lto2.dat
+ XTRA_SERVER_2=https://glltos2.glpals.com/4day/v3/latest/lto2.dat
+-SUPL_HOST=supl.google.com
+-SUPL_PORT=7275
+-SUPL_MODE=1
++#SUPL_HOST=supl.google.com
++#SUPL_PORT=7275
++#SUPL_MODE=1
