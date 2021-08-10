@@ -185,6 +185,46 @@
  	sockaddr_union addr = { .in = sin_test };
  	return _find_src_addr(&addr.generic, NULL, mark, uid) == 1;
  
+--- a/packages/modules/DnsResolver/getaddrinfo.cpp	2021-06-29 16:33:56.000000000 +0300
++++ b/packages/modules/DnsResolver/getaddrinfo.cpp	2021-08-10 23:52:12.170718175 +0300
+@@ -251,7 +251,7 @@ static int have_ipv6(unsigned mark, uid_
+ static int have_ipv4(unsigned mark, uid_t uid) {
+     static const struct sockaddr_in sin_test = {
+             .sin_family = AF_INET,
+-            .sin_addr.s_addr = __constant_htonl(0x08080808L)  // 8.8.8.8
++            .sin_addr.s_addr = __constant_htonl(0x7F000001L) // 127.0.0.1 // (0x08080808L)  // 8.8.8.8
+     };
+     sockaddr_union addr = {.sin = sin_test};
+     return _find_src_addr(&addr.sa, NULL, mark, uid) == 1;
+
+--- a/external/webrtc/webrtc/base/network.cc	2021-06-29 16:30:10.000000000 +0300
++++ b/external/webrtc/webrtc/base/network.cc	2021-07-15 22:00:30.000000000 +0300
+@@ -150,8 +150,9 @@ bool IsIgnoredIPv6(const InterfaceAddres
+ 
+ // These addresses are used as the targets to find out the default local address
+ // on a multi-homed endpoint. They are actually DNS servers.
+-const char kPublicIPv4Host[] = "8.8.8.8";
+-const char kPublicIPv6Host[] = "2001:4860:4860::8888";
++
++const char kPublicIPv4Host[] = "127.0.0.1";
++const char kPublicIPv6Host[] = "::1";
+ const int kPublicPort = 53;  // DNS port.
+ 
+ std::string MakeNetworkKey(const std::string& name, const IPAddress& prefix,
+
+--- a/external/mesa3d/.gitlab-ci/bare-metal/init.sh	2021-06-29 16:24:53.000000000 +0300
++++ b/external/mesa3d/.gitlab-ci/bare-metal/init.sh	2021-07-13 22:08:29.768001858 +0300
+@@ -14,7 +14,8 @@ mount -t tmpfs tmpfs /tmp
+ # Store Mesa's disk cache under /tmp, rather than sending it out over NFS.
+ export XDG_CACHE_HOME=/tmp
+ 
+-echo "nameserver 8.8.8.8" > /etc/resolv.conf
++#echo "nameserver 8.8.8.8" > /etc/resolv.conf
++echo "nameserver 127.0.0.1" > /etc/resolv.conf
+ 
+ # Not all DUTs have network
+ sntp -sS pool.ntp.org || true
+
 --- a/frameworks/base/core/res/res/values/config.xml	2021-07-19 21:00:36.771278838 +0300
 +++ b/frameworks/base/core/res/res/values/config.xml	2021-07-19 21:01:24.554522022 +0300
 @@ -2038,7 +2038,7 @@
