@@ -116,9 +116,11 @@ See: [chromium-webview/Android.mk](lineage_src_root/external/chromium-webview/An
 
 **1)** Download privacy friendly [simple-keyboard](https://github.com/rkkr/simple-keyboard/) and put source files into a new folder `packages/inputmethods/simple-keyboard/`
 
-**2)** Get [Android.mk](lineage_src_root/packages/inputmethods/simple-keyboard/Android.mk) and [CleanSpec.mk](lineage_src_root/packages/inputmethods/simple-keyboard/CleanSpec.mk) for simple-keyboard. Put the files into the root folder of downloaded `simple-keyboard` source files.
+**2)** Use Android Studio to compile the `simple-keyboard` from source code (unsigned APK, because `platform` certificate is used during AOSP build process). Once done, go to the next step.
 
-**3)** Remove default input method `LatinIME` from AOSP 11 compilation process by commenting out lines
+**3)** Get [Android.mk](lineage_src_root/packages/inputmethods/simple-keyboard/Android.mk) and [CleanSpec.mk](lineage_src_root/packages/inputmethods/simple-keyboard/CleanSpec.mk) for simple-keyboard. Put the files into the root folder of downloaded `simple-keyboard` source files.
+
+**4)** Remove default input method `LatinIME` from AOSP 11 compilation process by commenting out lines
 
 ```
 PRODUCT_PACKAGES += \
@@ -127,7 +129,7 @@ PRODUCT_PACKAGES += \
 
 in `build/make/target/product/handheld_product.mk`
 
-**4)** You need to add lines
+**5)** You need to add lines
 
 ```
 PRODUCT_PACKAGES += \
